@@ -1,8 +1,23 @@
 from flask import Flask, request, jsonify
 import psycopg2
+import paho.mqtt.client as mqtt
+import json
+
 
 app = Flask(__name__)
 
+broker = '202.157.186.97'
+port = 1883
+username = 'pablo'
+password = 'costa'
+mqtt_client = mqtt.Client()
+mqtt_client.username_pw_set(username, password)
+mqtt_client.connect(broker, port)
+
+def connect_mqtt():
+    mqtt_client.connect(broker,port)
+    mqtt_client.loop_start()
+    
 def get_db_connection():
     conn = psycopg2.connect(
         dbname="mqtt_predictions",
