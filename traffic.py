@@ -55,61 +55,67 @@ def get_receivers():
 @app.route('/api/session', methods=['POST'])
 def post_data_session():
     try:
-        # Baca data dari request JSON
+        # Read data from request JSON
         data = request.json
         
-        idAlatTx = data.get('idAlatTx')
+        # Extract data from the request
+        idAlatTx_list = data.get('idAlatTx', [])
         idAlatRx = data.get('idAlatRx')
         idUser = data.get('idUser')
         start_time = data.get('start_time')
         end_time = data.get('end_time')
         
-        if not all([idAlatTx, idAlatRx, idUser, start_time, end_time]):
+        # Check for missing data
+        if not all([idAlatRx, idUser, start_time, end_time]):
             return jsonify({'error': 'Missing data'}), 400
+
+        if not isinstance(idAlatTx_list, list):
+            return jsonify({'error': 'idAlatTx must be a list'}), 400
         
-        # Koneksi ke database
+        # Connect to the database
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Periksa keberadaan idAlatTx dan idAlatRx
-        cur.execute("SELECT COUNT(*) FROM predictions.mst_alat WHERE idAlat = %s AND tipe = 'tx'", (idAlatTx,))
-        tx_exists = cur.fetchone()[0] > 0
-        
+        # Check existence of idAlatRx
         cur.execute("SELECT COUNT(*) FROM predictions.mst_alat WHERE idAlat = %s AND tipe = 'rx'", (idAlatRx,))
         rx_exists = cur.fetchone()[0] > 0
-        
-        if not tx_exists:
-            cur.close()
-            conn.close()
-            return jsonify({'error': 'Transmitter Tidak Tersedia'}), 404
         
         if not rx_exists:
             cur.close()
             conn.close()
-            return jsonify({'error': 'Receiver Tidak Tersedia'}), 404
+            return jsonify({'error': f'Receiver {idAlatRx} Tidak Tersedia'}), 404
         
-        # SQL untuk menyisipkan data
-        insert_query = """
-        INSERT INTO predictions.mst_sesi (idAlatTx, idAlatRx, idUser, start_time, end_time)
-        VALUES (%s, %s, %s, %s, %s)
-        """
+        # Process each idAlatTx
+        for idAlatTx in idAlatTx_list:
+            # Check existence of idAlatTx
+            cur.execute("SELECT COUNT(*) FROM predictions.mst_alat WHERE idAlat = %s AND tipe = 'tx'", (idAlatTx,))
+            tx_exists = cur.fetchone()[0] > 0
+            
+            if not tx_exists:
+                cur.close()
+                conn.close()
+                return jsonify({'error': f'Transmitter {idAlatTx} Tidak Tersedia'}), 404
+            
+            # SQL to insert data
+            insert_query = """
+            INSERT INTO predictions.mst_sesi (idAlatTx, idAlatRx, idUser, start_time, end_time)
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            
+            # Insert data
+            cur.execute(insert_query, (idAlatTx, idAlatRx, idUser, start_time, end_time))
+            conn.commit()
         
-        # Menyisipkan data
-        cur.execute(insert_query, (idAlatTx, idAlatRx, idUser, start_time, end_time))
-        conn.commit()
-        
-        # Tutup koneksi dan cursor
+        # Close connection and cursor
         cur.close()
         conn.close()
         
-        # Respons sukses
+        # Success response
         return jsonify({'message': 'Session data inserted successfully'}), 201
     
     except Exception as e:
-        # Tangani kesalahan
+        # Handle errors
         return jsonify({'error': str(e)}), 500
-
-    
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=4500)
