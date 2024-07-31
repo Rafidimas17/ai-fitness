@@ -3,6 +3,8 @@ version: '3.8'
 services:
   app:
     build: .
+    ports:
+      - "4500:4500"  # Expose port 4500 on the host
     depends_on:
       - db
     environment:
@@ -10,18 +12,20 @@ services:
       - POSTGRES_DB=mqtt_predictions
       - POSTGRES_USER=james
       - POSTGRES_PASSWORD=miguel
+    volumes:
+      - .:/app
+    command: sh -c "chmod +x ./entrypoint.sh && ./entrypoint.sh"
 
   db:
     image: postgres:13
     environment:
-      POSTGRES_DB: mqtt_predictions
-      POSTGRES_USER: james
-      POSTGRES_PASSWORD: miguel
+      - POSTGRES_DB=mqtt_predictions
+      - POSTGRES_USER=james
+      - POSTGRES_PASSWORD=miguel
     ports:
-      - "5432:5432"
+      - "5432:5432"  # Expose port 5432 on the host
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
   postgres_data:
-
