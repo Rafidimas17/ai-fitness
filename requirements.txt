@@ -1,0 +1,14 @@
+paho-mqtt
+joblib
+pandas
+numpy
+scikit-learn
+mysql-connector-python
+psycopg2-binary
+requests
+Flask
+sqlalchemy 
+alembic
+pytz
+datetime
+pusher

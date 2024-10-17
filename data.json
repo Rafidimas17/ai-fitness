@@ -1,0 +1,47 @@
+allow_anonymous false
+password_file /etc/mosquitto/passwd
+
+listener 1883 localhost
+
+listener 8883
+certfile /etc/letsencrypt/live/ai.oldmapps.com/cert.pem
+cafile /etc/letsencrypt/live/ai.oldmapps.com/chain.pem
+keyfile /etc/letsencrypt/live/ai.oldmapps.com/privkey.pem
+
+listener 8083
+protocol websockets
+certfile /etc/letsencrypt/live/ai.oldmapps.com/cert.pem
+cafile /etc/letsencrypt/live/ai.oldmapps.com/chain.pem
+keyfile /etc/letsencrypt/live/ai.oldmapps.com/privkey.pem
+
+
+sudo nano /etc/letsencrypt/renewal/ai.oldmapps.com.conf
+
+
+
+# MQTT with TLS/SSL
+listener 8883
+protocol mqtt
+cafile /root/certs/ca.crt
+certfile /root/certs/server.crt
+keyfile /root/certs/server.key
+
+# WebSocket listener
+listener 8083
+protocol websockets
+cafile /root/certs/ca.crt
+certfile /root/certs/server.crt
+keyfile /root/certs/server.key
+
+
+sudo chmod 644 /root/certs/ca.crt /root/certs/server.crt /root/certs/server.key
+
+sudo chown mosquitto: /root/certs/ca.crt /root/certs/server.crt /root/certs/server.key
+
+
+mosquitto_pub -h ai.oldmapps.com -t test -m "hello world" -p 8884 --capath /root/certs/ -u "iot_system" -P "olahraga"
+
+mosquitto_sub -h ai.oldmapps.com -t test -p 8884 --capath /root/certs/ -u "iot_system" -P "olahraga"
+
+
+halo
