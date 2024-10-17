@@ -89,21 +89,22 @@ def get_age_from_db(session_name, serial_number):
                 """
                 cur.execute(query, (session_name, serial_number))
                 result = cur.fetchone()
+                if result is None:
+                    print(f"No age found for session_name: {session_name} and serial_number: {serial_number}.")
                 return result[0] if result else None
     except psycopg2.Error as e:
         print(f"Database error: {e}")
         return None
 
+
 def on_message(client, userdata, msg):
-    """Callback for when a message is received on a subscribed topic."""
     global active_session_id, session_data
 
     # Parse the received message
     data = msg.payload.decode()
     json_data = json.loads(data)
-    # Ekstrak nilai dari JSO
-    session_id = json_data.get('session_id')  # Ambil sampai 20 karakter pertama
-    serial_number = json_data.get('serial_number')  # Ambil 7 karakter pertama
+    session_id = json_data.get('session_id')
+    serial_number = json_data.get('serial_number')
     age = get_age_from_db(session_id, serial_number)
     hr_2 = json_data.get('hr_2')
     spo2 = json_data.get('spo2')
@@ -111,10 +112,12 @@ def on_message(client, userdata, msg):
     temp = json_data.get('temp')
     longitude = json_data.get('longitude')
     latitude = json_data.get('latitude')
-        # Extract data from the parsed message
-        
-       
-        # Calculate VO2max
+
+    if age is None:
+        print(f"Error: Age not found for session_id: {session_id} and serial_number: {serial_number}. Skipping VO2max calculation.")
+        return  # Skip further processing if age is not found
+
+    # Calculate VO2max
     vo2max = calculate_vo2max(age, steps, hr_2, spo2)
 
         # Publish received message to the test-ai topic
